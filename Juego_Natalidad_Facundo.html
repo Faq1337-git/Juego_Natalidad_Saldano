@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desafío Demográfico: Trazá la Curva · Expo Ciencia de Datos & ML 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<style>
+:root {
+  --bg: #020617;
+  --cd: rgba(15, 23, 42, 0.86);
+  --bd: rgba(148, 163, 184, 0.22);
+  --tx: #f8fafc;
+  --mu: #94a3b8;
+}
+html {
+  font-size: 16px;
+  transition: font-size 0.25s ease;
+}
+html.expo-scale {
+  font-size: 18px;
+}
+body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(at 0% 0%, rgba(34, 211, 238, 0.12) 0px, transparent 45%),
+    radial-gradient(at 100% 10%, rgba(167, 139, 250, 0.12) 0px, transparent 45%),
+    radial-gradient(at 50% 100%, rgba(52, 211, 153, 0.08) 0px, transparent 50%);
+  background-attachment: fixed;
+  color: var(--tx);
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.card {
+  background: var(--cd);
+  border: 1px solid var(--bd);
+  border-radius: 1.25rem;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 12px 35px -10px rgba(0, 0, 0, 0.45);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1rem;
+  border-radius: 0.75rem;
+  font-weight: 700;
+  font-size: 0.92rem;
+  border: 1px solid var(--bd);
+  background: rgba(30, 41, 59, 0.8);
+  color: var(--tx);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  user-select: none;
+}
+.btn:hover:not(:disabled) {
+  border-color: #22d3ee;
+  color: #22d3ee;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(34, 211, 238, 0.18);
+}
+.btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+.btn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+.btn.on {
+  background: rgba(34, 211, 238, 0.18);
+  border-color: #22d3ee;
+  color: #22d3ee;
+  box-shadow: 0 0 18px rgba(34, 211, 238, 0.22);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #8b5cf6 100%);
+  border: none;
+  color: #ffffff !important;
+  font-weight: 800;
+  box-shadow: 0 8px 25px -4px rgba(6, 182, 212, 0.5);
+}
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 12px 30px -4px rgba(139, 92, 246, 0.65);
+  filter: brightness(1.08);
+}
+
+.btn-emerald {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: none;
+  color: #ffffff !important;
+  font-weight: 800;
+  box-shadow: 0 8px 25px -4px rgba(16, 185, 129, 0.45);
+}
+.btn-emerald:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 30px -4px rgba(16, 185, 129, 0.65);
+}
+
+.pulse-cta {
+  animation: pulseBtn 1.6s infinite alternate;
+}
+@keyframes pulseBtn {
+  from { box-shadow: 0 0 10px rgba(16, 185, 129, 0.4), 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  to { box-shadow: 0 0 25px rgba(16, 185, 129, 0.85), 0 0 0 6px rgba(16, 185, 129, 0); }
+}
+
+/* Lienzo de dibujo interactivo */
+#canvasWrap {
+  position: relative;
+  width: 100%;
+  height: 450px;
+  border-radius: 1rem;
+  background: rgba(2, 6, 23, 0.75);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+}
+#gameCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: crosshair;
+}
+
+/* Animaciones de entrada */
+.pop-in {
+  animation: popIn 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(14px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.rank-row {
+  transition: all 0.25s ease;
+}
+.rank-row:hover {
+  transform: translateX(4px);
+  background: rgba(30, 41, 59, 0.85);
+}
+.rank-highlight {
+  animation: highlightPulse 1.5s infinite alternate;
+  border-color: #fbbf24 !important;
+  background: rgba(251, 191, 36, 0.14) !important;
+}
+@keyframes highlightPulse {
+  from { box-shadow: 0 0 6px rgba(251, 191, 36, 0.25); }
+  to { box-shadow: 0 0 20px rgba(251, 191, 36, 0.65); }
+}
+
+.live-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  background: #34d399;
+  box-shadow: 0 0 10px #34d399;
+  animation: blink 2s infinite;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+</style>
+</head>
+<body class="p-3 md:p-5 flex flex-col justify-between">
+
+<!-- ENCABEZADO EXPO -->
+<header class="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-800/80">
+  <div>
+    <div class="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-bold uppercase tracking-wider mb-1">
+      <span>🎮 Stand Interactivo · Ciencia de Datos & Machine Learning</span>
+    </div>
+    <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-cyan-400 via-emerald-300 to-violet-400 bg-clip-text text-transparent">
+      Desafío Demográfico: ¡Trazá la Curva!
+    </h1>
+    <p class="text-slate-400 text-sm font-medium">
+      ¿Prestaste atención al Dashboard? Dibujá cómo evolucionó la natalidad entre 2015 y 2024 en 3 provincias y entrá al Ranking de la Expo.
+    </p>
+  </div>
+
+  <div class="flex flex-wrap items-center gap-2">
+    <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/70 border border-slate-700/60 text-xs text-slate-300">
+      <span id="syncDot" class="live-dot"></span>
+      <span id="syncText">Datos Oficiales DEIS + ML</span>
+    </div>
+    <button class="btn" id="btnMode" title="Cambiar selección de las 3 provincias">
+      🎯 Modo: Clásico (Jujuy · Bs.As. · Tucumán)
+    </button>
+    <button class="btn" id="btnExpo" title="Aumentar escala visual para pantalla grande">
+      🔍 Escala Expo (A+)
+    </button>
+    <button class="btn on" id="btnSound" title="Activar o silenciar efectos de sonido">
+      🔊 Sonido
+    </button>
+  </div>
+</header>
+
+<!-- GRILLA PRINCIPAL: JUEGO (IZQUIERDA 8 COL) + RANKING EN VIVO (DERECHA 4 COL) -->
+<main class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+  <!-- COLUMNA IZQUIERDA: MOTOR DEL JUEGO -->
+  <section class="lg:col-span-8 card p-4 md:p-6">
+
+    <!-- PANTALLA 1: BIENVENIDA Y REGISTRO DE JUGADOR -->
+    <div id="screenStart" class="pop-in py-4">
+      <div class="text-center max-w-2xl mx-auto">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-violet-500/15 border border-violet-400/30 text-violet-300 text-sm font-bold mb-4">
+          <span>🏆 Récord actual a vencer: <b id="topRecordBanner" class="text-amber-300">--%</b></span>
+        </div>
+        <h2 class="text-3xl md:text-4xl font-extrabold mb-3">
+          ¿Qué tan preciso es tu ojo de Analista de Datos?
+        </h2>
+        <p class="text-slate-300 text-base md:text-lg mb-6 leading-relaxed">
+          Te mostraremos la tasa de natalidad oficial (nacidos cada 1.000 habitantes) desde el año <b>2000 hasta el quiebre de 2014</b>.
+          Tu misión es <b>dibujar con el mouse qué pasó desde 2015 hasta 2024</b> a lo largo de <b>3 rondas</b>.
+        </p>
+
+        <!-- Pasos visuales -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6 text-left">
+          <div class="p-3.5 rounded-xl bg-slate-900/70 border border-slate-700/60">
+            <div class="text-cyan-400 font-extrabold text-sm mb-1">PASO 1 · OBSERVÁ</div>
+            <p class="text-xs text-slate-300">Mirá la curva histórica de la provincia entre 2000 y 2014 y recordá el mapa de calor del Dashboard.</p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-900/70 border border-slate-700/60">
+            <div class="text-emerald-400 font-extrabold text-sm mb-1">PASO 2 · DIBUJÁ</div>
+            <p class="text-xs text-slate-300">Mantené apretado el clic desde el punto de 2014 y arrastrá hasta 2024 trazando tu predicción.</p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-900/70 border border-slate-700/60">
+            <div class="text-amber-400 font-extrabold text-sm mb-1">PASO 3 · COMPETÍ</div>
+            <p class="text-xs text-slate-300">Promediamos tu precisión de las 3 provincias y te ubicamos en vivo en el Ranking de la Expo.</p>
+          </div>
+        </div>
+
+        <!-- Formulario de ingreso -->
+        <div class="max-w-md mx-auto bg-slate-900/90 p-5 rounded-2xl border border-cyan-500/30 shadow-lg">
+          <label for="playerName" class="block text-left text-xs font-bold uppercase tracking-wider text-cyan-300 mb-2">
+            Ingresá tu Nombre o Apodo para el Ranking:
+          </label>
+          <input id="playerName" type="text" maxlength="22" placeholder="Ej: Facundo, Sofía, Grupo 4..."
+            class="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-white font-bold text-lg focus:border-cyan-400 focus:outline-none mb-4">
+          <button id="btnStartGame" class="btn btn-primary w-full py-3.5 text-lg">
+            🚀 ¡COMENZAR LAS 3 RONDAS!
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANTALLA 2: ÁREA DE JUEGO (CANVAS INTERACTIVO) -->
+    <div id="screenPlay" class="hidden">
+      <!-- Barra superior de la ronda -->
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-3 pb-3 border-b border-slate-800">
+        <div class="flex items-center gap-3">
+          <span id="roundBadge" class="px-3.5 py-1.5 rounded-xl bg-cyan-500/20 border border-cyan-400/40 text-cyan-300 font-extrabold text-sm">
+            RONDA 1 DE 3
+          </span>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 id="provTitle" class="text-2xl md:text-3xl font-extrabold text-white">Jujuy</h2>
+              <span id="provRegion" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700">NOA</span>
+            </div>
+            <p id="provHint" class="text-xs md:text-sm text-slate-400">
+              En el año 2000 tenía 22.6‰ y en 2014 estaba en 19.5‰. ¿Cómo siguió la curva hasta 2024?
+            </p>
+          </div>
+        </div>
+
+        <!-- Indicadores acumulados de las 3 rondas -->
+        <div class="flex items-center gap-2">
+          <div id="roundPills" class="flex items-center gap-1.5"></div>
+        </div>
+      </div>
+
+      <!-- Barra de estado de trazo e instrucciones -->
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5 px-3 py-2 rounded-xl bg-slate-900/70 border border-slate-800">
+        <div class="flex items-center gap-2 text-sm">
+          <span id="drawStatusIcon" class="text-cyan-400 font-bold">✏️</span>
+          <span id="drawStatusText" class="text-slate-200 font-medium">
+            Hacé clic en el círculo brillante de <b>2014</b> y arrastrá hacia la derecha hasta <b>2024</b>.
+          </span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span id="liveCoordBadge" class="px-3 py-1 rounded-lg bg-slate-950 border border-slate-700 text-cyan-300 font-bold text-xs tabular-nums">
+            Progreso: 0 / 10 años
+          </span>
+          <button id="btnClearDraw" class="btn text-xs py-1 px-2.5">
+            🗑️ Borrar trazo
+          </button>
+        </div>
+      </div>
+
+      <!-- LIENZO HTML5 CANVAS -->
+      <div id="canvasWrap" class="mb-4">
+        <canvas id="gameCanvas"></canvas>
+      </div>
+
+      <!-- PANEL DE RESULTADO DE LA RONDA (aparece al revelar) -->
+      <div id="roundResultCard" class="hidden pop-in mb-4 p-4 rounded-2xl bg-slate-900/95 border-2 border-emerald-500/50 shadow-xl">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+          <div class="md:col-span-4 text-center md:border-r border-slate-800 pr-2">
+            <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Precisión en esta provincia</div>
+            <div id="roundScoreBig" class="text-4xl md:text-5xl font-extrabold text-emerald-400 my-1 tabular-nums">92.4%</div>
+            <span id="roundRankTag" class="inline-block px-3 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              🎯 ¡Excelente ojo estadístico!
+            </span>
+          </div>
+          <div class="md:col-span-8 space-y-2 text-sm">
+            <div class="grid grid-cols-3 gap-2 text-center">
+              <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800">
+                <div class="text-xs text-slate-400">Tu cierre 2024</div>
+                <div id="resUser2024" class="text-lg font-extrabold text-cyan-400 tabular-nums">-- ‰</div>
+              </div>
+              <div class="p-2 rounded-xl bg-slate-950/80 border border-emerald-500/30">
+                <div class="text-xs text-slate-400">Real DEIS 2024</div>
+                <div id="resReal2024" class="text-lg font-extrabold text-emerald-400 tabular-nums">-- ‰</div>
+              </div>
+              <div class="p-2 rounded-xl bg-slate-950/80 border border-violet-500/30">
+                <div class="text-xs text-slate-400">Proyección ML 2026</div>
+                <div id="resML2026" class="text-lg font-extrabold text-violet-400 tabular-nums">-- ‰</div>
+              </div>
+            </div>
+            <p id="resInsight" class="text-xs md:text-sm text-slate-300 bg-slate-950/60 px-3 py-2 rounded-lg border border-slate-800"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botones de Acción de la Ronda -->
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <button id="btnCancelGame" class="btn text-xs">
+          ⬅ Cambiar jugador
+        </button>
+        <div class="flex items-center gap-3">
+          <button id="btnReveal" class="btn btn-emerald px-6 py-3 text-base" disabled>
+            ✨ ¡REVELAR CURVA REAL Y CALCULAR PRECISIÓN!
+          </button>
+          <button id="btnNextRound" class="btn btn-primary px-6 py-3 text-base hidden">
+            Siguiente Provincia ➔
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANTALLA 3: GRAN FINAL DE LAS 3 RONDAS Y PODIO -->
+    <div id="screenFinal" class="hidden pop-in py-3">
+      <div id="finalBanner" class="p-6 rounded-2xl text-center mb-5 border-2">
+        <div id="finalCrown" class="text-5xl mb-2">🏆</div>
+        <div id="finalHeadline" class="text-2xl md:text-3xl font-extrabold mb-1">
+          ¡NUEVO RÉCORD DE LA EXPO!
+        </div>
+        <p id="finalSubline" class="text-base md:text-lg font-medium text-slate-200">
+          Lograste el Puesto #1 en el Ranking General
+        </p>
+        <div class="mt-4 inline-flex flex-col items-center bg-slate-950/80 px-8 py-3 rounded-2xl border border-slate-700">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Promedio Final de Precisión (3 Rondas)</span>
+          <span id="finalAvgScore" class="text-5xl md:text-6xl font-extrabold text-amber-400 tabular-nums my-1">91.8%</span>
+        </div>
+      </div>
+
+      <!-- Desglose de las 3 provincias jugadas -->
+      <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400 mb-2.5">
+        📊 Desglose de tus 3 Rondas:
+      </h3>
+      <div id="finalBreakdown" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6"></div>
+
+      <div class="flex flex-wrap items-center justify-center gap-4">
+        <button id="btnPlayAgainSame" class="btn btn-primary px-6 py-3.5 text-base">
+          🔄 ¡Siguiente Jugador / Jugar de Nuevo!
+        </button>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- COLUMNA DERECHA: TABLA DE POSICIONES EN VIVO (LEADERBOARD EXPO) -->
+  <aside class="lg:col-span-4 card p-4 md:p-5 flex flex-col justify-between">
+    <div>
+      <div class="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-800">
+        <div>
+          <h2 class="text-lg md:text-xl font-extrabold flex items-center gap-2">
+            <span>🏆 Ranking de la Expo</span>
+          </h2>
+          <p class="text-xs text-slate-400">Top mejores promedios de precisión (3 rondas)</p>
+        </div>
+        <span id="totalPlayersBadge" class="px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-xs font-bold">
+          0 jugadores
+        </span>
+      </div>
+
+      <!-- Lista del Ranking -->
+      <div id="leaderboardList" class="space-y-2 max-h-[470px] overflow-y-auto pr-1"></div>
+    </div>
+
+    <!-- Pie de Ranking / Herramientas de Stand -->
+    <div class="mt-4 pt-3 border-t border-slate-800/80">
+      <div class="flex items-center justify-between text-xs text-slate-400">
+        <span>💾 Guardado automático en navegador</span>
+        <button id="btnAdminToggle" class="hover:text-cyan-400 underline font-semibold">
+          ⚙️ Admin Ranking
+        </button>
+      </div>
+
+      <!-- Panel oculto de administración para los organizadores del stand -->
+      <div id="adminPanel" class="hidden mt-3 p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+        <div class="text-xs font-bold text-slate-300">Controles del Stand (Organizadores):</div>
+        <div class="flex flex-wrap gap-2">
+          <button id="btnSeedRanking" class="btn text-xs py-1 px-2.5">
+            📥 Cargar puntajes base
+          </button>
+          <button id="btnClearRanking" class="btn text-xs py-1 px-2.5 text-rose-400 border-rose-500/40">
+            🗑️ Vaciar Ranking
+          </button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+</main>
+
+<script>
+/* ============================================================================
+   1. CONEXIÓN AL DATASET DE GOOGLE SHEETS (APPS SCRIPT) + FALLBACK OFICIAL DEIS
+   ============================================================================ */
+const DEFAULT_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz337nMaMDFE7pkBnRGCycbY6Y6Agy23dbTEXuXlmHGPh4Q1sWNpgSZFcZphRmoCxou/exec";
+
+const FALLBACK_CSV_DATA = `indice_tiempo,natalidad_argentina,natalidad_ciudad_autonoma_de_buenos_aires,natalidad_buenos_aires,natalidad_catamarca,natalidad_cordoba,natalidad_corrientes,natalidad_chaco,natalidad_chubut,natalidad_entre_rios,natalidad_formosa,natalidad_jujuy,natalidad_la_pampa,natalidad_la_rioja,natalidad_mendoza,natalidad_misiones,natalidad_neuquen,natalidad_rio_negro,natalidad_salta,natalidad_san_juan,natalidad_san_luis,natalidad_santa_cruz,natalidad_santa_fe,natalidad_santiago_del_estero,natalidad_tucuman,natalidad_tierra_del_fuego
+01-01-2000,19.0,14.3,17.5,25.8,17.2,22.7,25.8,19.4,21.3,25.7,22.6,18.1,22.6,19.2,25.8,17.9,18.9,24.0,22.7,22.3,19.6,16.9,21.6,22.6,19.9
+01-01-2001,18.2,13.9,16.9,24.9,15.9,21.9,22.2,18.4,20.5,22.4,23.1,17.2,20.5,19.1,24.2,16.8,17.8,24.2,23.7,22.3,19.8,16.2,21.1,21.1,17.9
+01-01-2002,18.3,13.6,17.0,24.4,16.6,23.3,24.9,17.1,19.5,25.1,22.1,16.7,21.4,16.9,22.9,16.1,17.3,24.7,22.3,22.0,19.2,16.7,22.1,22.6,17.2
+01-01-2003,18.4,14.2,17.3,22.5,17.5,22.2,20.9,18.7,19.8,25.0,20.3,18.3,21.2,17.5,24.1,19.4,18.6,22.0,22.2,21.7,21.9,17.3,17.8,21.8,20.8
+01-01-2004,19.3,14.9,18.5,20.6,17.8,22.7,25.1,19.3,19.5,26.5,21.3,17.4,21.1,18.4,26.4,19.8,18.3,23.9,22.5,21.9,22.4,17.6,19.7,21.0,19.5
+01-01-2005,18.5,14.5,17.9,19.7,17.1,20.2,22.6,19.2,19.0,23.5,19.9,16.9,20.8,18.8,23.0,20.0,18.7,22.5,21.4,19.9,22.9,16.3,21.0,19.9,20.7
+01-01-2006,17.9,14.6,17.7,18.3,16.5,18.7,19.6,20.0,17.2,21.4,18.4,16.5,19.0,19.0,19.9,20.5,18.6,21.0,20.7,20.2,23.5,15.8,20.0,18.5,20.1
+01-01-2007,17.8,14.1,17.7,18.3,16.3,18.9,18.4,20.2,16.9,21.1,18.6,16.2,18.4,19.3,20.4,20.5,18.9,20.6,20.8,19.3,23.8,15.7,19.4,19.7,20.8
+01-01-2008,18.8,15.1,18.6,18.6,17.4,19.7,20.8,21.4,17.2,22.6,19.1,16.5,19.0,20.2,23.1,21.0,19.9,21.4,20.7,19.3,25.0,16.9,20.5,19.9,20.8
+01-01-2009,18.6,14.6,18.4,17.4,17.4,19.9,20.4,21.3,17.5,21.9,19.2,16.3,17.9,19.7,23.7,20.9,19.6,21.0,20.6,18.2,25.2,16.5,21.9,19.1,20.2
+01-01-2010,18.7,14.9,18.9,16.9,17.2,19.8,21.2,21.2,17.4,21.1,19.2,16.2,17.2,19.3,22.2,21.6,20.0,21.9,19.8,17.4,26.0,16.2,19.9,20.1,18.8
+01-01-2011,18.5,14.8,18.8,16.0,16.9,19.9,22.6,20.7,17.2,21.6,19.6,15.6,17.4,19.2,19.3,19.6,19.8,21.7,19.9,16.7,25.0,16.4,20.2,19.5,18.6
+01-01-2012,17.9,14.2,18.1,15.0,16.5,18.6,20.2,20.2,16.7,21.0,18.0,15.4,17.0,18.4,22.3,19.1,19.4,20.2,19.6,16.0,24.0,16.3,17.9,18.7,19.2
+01-01-2013,17.9,14.3,17.8,16.9,16.0,19.0,19.9,18.5,17.3,21.0,18.5,16.8,17.5,18.7,22.0,18.7,17.9,21.1,20.6,16.7,19.7,16.9,18.8,18.9,19.8
+01-01-2014,18.2,14.3,17.9,17.4,16.8,19.8,20.2,17.8,17.8,21.8,19.5,16.5,17.3,19.4,23.4,19.5,17.9,21.6,21.3,16.9,19.8,17.2,19.8,19.3,20.5
+01-01-2015,17.9,13.7,17.3,17.2,16.4,19.3,22.7,17.4,17.8,21.3,18.2,15.1,17.1,18.8,22.8,19.1,18.2,21.3,20.5,17.0,19.8,16.9,20.5,19.0,19.9
+01-01-2016,16.7,13.1,16.2,16.7,15.7,18.5,19.1,16.6,16.6,19.4,16.8,15.1,16.6,17.5,21.0,17.9,16.8,19.4,18.8,15.5,18.6,16.3,18.7,17.5,18.1
+01-01-2017,16.0,11.7,15.4,15.8,15.0,18.3,19.8,15.3,16.3,19.6,15.8,14.3,15.6,16.3,21.1,16.3,16.0,19.7,18.1,14.8,17.0,15.4,18.8,16.7,16.9
+01-01-2018,15.4,11.6,14.6,16.4,14.5,18.0,21.0,14.3,15.6,19.8,15.7,13.5,14.8,15.4,20.2,15.6,14.6,18.2,17.7,14.2,14.7,14.8,18.9,16.9,16.3
+01-01-2019,13.9,11.1,13.1,13.9,13.7,16.3,18.6,12.9,14.0,17.1,13.6,12.1,13.7,13.9,18.4,14.4,13.3,16.3,16.2,13.2,13.3,13.4,17.5,15.0,14.2
+01-01-2020,11.8,9.1,10.9,11.9,11.8,14.8,15.3,11.3,12.3,15.2,11.9,10.4,11.6,11.8,16.8,12.3,11.6,12.7,14.0,11.8,11.3,11.2,14.0,12.8,10.9
+01-01-2021,11.6,8.5,10.7,11.4,11.6,13.9,15.4,10.2,11.7,14.5,10.8,9.9,11.6,11.4,16.1,11.6,10.6,14.1,14.1,11.7,9.4,12.2,13.8,12.8,9.9
+01-01-2022,10.7,8.0,9.7,11.3,10.8,12.6,14.7,9.6,10.7,13.8,9.9,9.6,10.9,10.5,15.2,11.0,10.5,12.8,13.1,10.7,9.5,11.5,11.7,11.9,8.5
+01-01-2023,9.9,7.8,9.0,10.0,9.8,12.4,13.5,8.4,9.9,13.3,9.3,8.8,10.2,9.8,14.5,10.0,9.5,11.5,12.2,9.4,8.0,10.4,11.8,10.6,7.7
+01-01-2024,8.9,6.9,8.4,8.8,8.6,10.5,11.9,8.4,8.6,10.7,8.0,8.1,8.7,9.1,12.3,9.7,8.6,9.7,10.3,8.3,8.1,9.2,10.8,9.4,6.9`;
+
+const JURISDICCIONES = [
+  { col: "natalidad_jujuy", nombre: "Jujuy", region: "NOA", info: "Jujuy protagonizó la 3° mayor caída de todo el país (-64.6% desde el 2000), bajando de 19.5‰ en 2014 a solo 8.0‰ en 2024." },
+  { col: "natalidad_buenos_aires", nombre: "Buenos Aires", region: "Centro / AMBA", info: "La provincia más poblada del país se mantuvo estable hasta 2014 (17.9‰) y luego se desplomó a más de la mitad (8.4‰ en 2024)." },
+  { col: "natalidad_tucuman", nombre: "Tucumán", region: "NOA", info: "Tucumán pasó de 22.6‰ en el año 2000 y 19.3‰ en 2014 a perforar el piso de los 10 nacimientos por mil en 2024 (9.4‰)." },
+  { col: "natalidad_argentina", nombre: "Total Argentina", region: "Nacional", info: "El promedio nacional cayó un 53.2% desde el año 2000, pasando de una meseta de ~18.2‰ en 2014 a 8.9‰ en 2024." },
+  { col: "natalidad_ciudad_autonoma_de_buenos_aires", nombre: "CABA", region: "Centro / AMBA", info: "CABA tiene la tasa más baja de Argentina: pasó de 14.3‰ en 2014 a 6.9‰ en 2024, con proyección ML cercana a 5.1‰ en 2026." },
+  { col: "natalidad_misiones", nombre: "Misiones", region: "NEA", info: "Misiones lidera el ranking nacional de natalidad, pero aun así cayó de 23.4‰ en 2014 a 12.3‰ en 2024." },
+  { col: "natalidad_cordoba", nombre: "Córdoba", region: "Centro", info: "Córdoba redujo su tasa exactamente un 50% entre 2000 (17.2‰) y 2024 (8.6‰), acelerando su caída desde 2015." },
+  { col: "natalidad_salta", nombre: "Salta", region: "NOA", info: "Salta pasó de 24.0‰ en el 2000 y 21.6‰ en 2014 a 9.7‰ en 2024 (-59.6% de caída acumulada)." },
+  { col: "natalidad_santa_cruz", nombre: "Santa Cruz", region: "Patagonia", info: "Santa Cruz llegó a tener 26.0‰ en 2010 y protagonizó un descenso vertiginoso hasta 8.1‰ en 2024." },
+  { col: "natalidad_tierra_del_fuego", nombre: "Tierra del Fuego", region: "Patagonia", info: "Tierra del Fuego pasó de 20.5‰ en 2014 a empatar con CABA como la tasa más baja del país en 2024 (6.9‰)." }
+];
+const BY_COL = {};
+JURISDICCIONES.forEach(j => BY_COL[j.col] = j);
+
+/* ============================================================================
+   2. SINTETIZADOR DE AUDIO INTERACTIVO (WEB AUDIO API)
+   ============================================================================ */
+let audioCtx = null;
+let soundOn = true;
+
+function playSFX(type, val = 0) {
+  if (!soundOn) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const now = audioCtx.currentTime;
+
+    if (type === 'click') {
+      const osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(520, now);
+      osc.frequency.exponentialRampToValueAtTime(860, now + 0.045);
+      g.gain.setValueAtTime(0.06, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+      osc.connect(g); g.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + 0.055);
+    } else if (type === 'draw') {
+      // El tono varía según la tasa dibujada (val entre 4 y 28)
+      const osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+      osc.type = 'triangle';
+      const freq = 260 + Math.max(0, Math.min(28, val)) * 22;
+      osc.frequency.setValueAtTime(freq, now);
+      g.gain.setValueAtTime(0.035, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+      osc.connect(g); g.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + 0.045);
+    } else if (type === 'reveal') {
+      [440, 554.37, 659.25, 880].forEach((f, i) => {
+        const osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(f, now + i * 0.06);
+        g.gain.setValueAtTime(0.07, now + i * 0.06);
+        g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.06 + 0.18);
+        osc.connect(g); g.connect(audioCtx.destination);
+        osc.start(now + i * 0.06); osc.stop(now + i * 0.06 + 0.19);
+      });
+    } else if (type === 'fanfare') {
+      // Fanfarria de victoria para el podio / récord
+      const notes = [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5];
+      const times = [0, 0.1, 0.2, 0.32, 0.48, 0.6];
+      notes.forEach((f, i) => {
+        const osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(f, now + times[i]);
+        g.gain.setValueAtTime(0.09, now + times[i]);
+        g.gain.exponentialRampToValueAtTime(0.001, now + times[i] + 0.24);
+        osc.connect(g); g.connect(audioCtx.destination);
+        osc.start(now + times[i]); osc.stop(now + times[i] + 0.25);
+      });
+    }
+  } catch (e) {}
+}
+
+/* ============================================================================
+   3. PROCESAMIENTO DE DATOS Y PROYECCIÓN ML (2025-2026)
+   ============================================================================ */
+let DATA = {};
+const $ = id => document.getElementById(id);
+
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  const headers = lines[0].split(',');
+  return lines.slice(1).map(line => {
+    const parts = line.split(','), obj = {};
+    headers.forEach((h, i) => obj[h.trim()] = parts[i]);
+    return obj;
+  });
+}
+
+function ingestData(rows) {
+  DATA = {};
+  JURISDICCIONES.forEach(j => DATA[j.col] = {});
+  rows.forEach(r => {
+    const norm = {};
+    for (const k in r) {
+      norm[k.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s-]+/g, '_')] = r[k];
+    }
+    const m = String(norm.indice_tiempo || '').match(/\d{4}/);
+    if (!m) return;
+    const y = +m[0];
+    JURISDICCIONES.forEach(j => {
+      const v = parseFloat(String(norm[j.col]).replace(',', '.'));
+      if (!isNaN(v)) DATA[j.col][y] = v;
+    });
+  });
+
+  // Calcular proyección ML (Regresión Lineal tramo estructural 2014-2024) si 2025/2026 no vienen del Sheet
+  JURISDICCIONES.forEach(j => {
+    const d = DATA[j.col];
+    const xs = [], ys = [];
+    for (let y = 2014; y <= 2024; y++) {
+      if (d[y] != null) { xs.push(y); ys.push(d[y]); }
+    }
+    const n = xs.length;
+    const mx = xs.reduce((a, b) => a + b, 0) / n;
+    const my = ys.reduce((a, b) => a + b, 0) / n;
+    let sxy = 0, sxx = 0;
+    xs.forEach((x, i) => { sxy += (x - mx) * (ys[i] - my); sxx += (x - mx) ** 2; });
+    const slope = sxy / sxx;
+    const intercept = my - slope * mx;
+    if (d[2025] == null) d[2025] = +(Math.max(1, slope * 2025 + intercept)).toFixed(1);
+    if (d[2026] == null) d[2026] = +(Math.max(1, slope * 2026 + intercept)).toFixed(1);
+  });
+}
+
+async function syncFromAppsScript() {
+  ingestData(parseCSV(FALLBACK_CSV_DATA));
+  try {
+    const url = localStorage.getItem('apps_url') || DEFAULT_APPS_SCRIPT_URL;
+    if (!url || url.startsWith('PEGAR_AQUI')) return;
+    const res = await fetch(url);
+    if (!res.ok) return;
+    const json = await res.json();
+    const rows = Array.isArray(json) ? json : (json.data || json.rows || []);
+    if (rows.length > 0) {
+      ingestData(rows);
+      $('syncText').textContent = 'Conectado en vivo a Google Sheets';
+    }
+  } catch (e) {
+    $('syncText').textContent = 'Dataset Oficial DEIS + ML Activo';
+  }
+}
+
+/* ============================================================================
+   4. GESTIÓN DEL RANKING EN VIVO (LOCALSTORAGE)
+   ============================================================================ */
+const STORAGE_KEY = 'expo_natalidad_leaderboard_2026';
+
+const INITIAL_BENCHMARKS = [
+  { id: 'seed1', name: 'Sofía M.', score: 87.4, rounds: 'Jujuy 89% · Bs.As. 86% · Tucumán 87%', time: 'Marca Base' },
+  { id: 'seed2', name: 'Lucas T.', score: 83.1, rounds: 'Jujuy 81% · Bs.As. 85% · Tucumán 83%', time: 'Marca Base' },
+  { id: 'seed3', name: 'Valentina R.', score: 78.6, rounds: 'Jujuy 76% · Bs.As. 80% · Tucumán 80%', time: 'Marca Base' }
+];
+
+function getLeaderboard() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_BENCHMARKS));
+      return [...INITIAL_BENCHMARKS];
+    }
+    return JSON.parse(raw);
+  } catch (e) {
+    return [...INITIAL_BENCHMARKS];
+  }
+}
+
+function saveLeaderboard(list) {
+  list.sort((a, b) => b.score - a.score);
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch (e) {}
+  renderLeaderboard();
+}
+
+let lastAddedId = null;
+
+function renderLeaderboard() {
+  const list = getLeaderboard().sort((a, b) => b.score - a.score);
+  $('totalPlayersBadge').textContent = `${list.length} ${list.length === 1 ? 'jugador' : 'jugadores'}`;
+  $('topRecordBanner').textContent = list.length > 0 ? `${list[0].score.toFixed(1)}% (${list[0].name})` : '85.0%';
+
+  if (list.length === 0) {
+    $('leaderboardList').innerHTML = `
+      <div class="text-center py-10 text-slate-400 text-sm">
+        ¡El Ranking está vacío! Sé el primero en inaugurar el Top #1 de la Expo.
+      </div>`;
+    return;
+  }
+
+  $('leaderboardList').innerHTML = list.map((item, idx) => {
+    const pos = idx + 1;
+    const medal = pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : `#${pos}`;
+    const isTop1 = pos === 1;
+    const isHighlighted = item.id === lastAddedId;
+    return `
+      <div class="rank-row flex items-center justify-between gap-2 p-3 rounded-xl border ${isHighlighted ? 'rank-highlight' : isTop1 ? 'bg-amber-500/10 border-amber-500/40' : 'bg-slate-900/65 border-slate-800'}">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center font-extrabold text-sm ${pos <= 3 ? 'bg-amber-500/20 text-amber-300' : 'bg-slate-800 text-slate-400'}">
+            ${medal}
+          </div>
+          <div class="min-w-0">
+            <div class="font-bold text-sm text-white truncate flex items-center gap-1.5">
+              <span>${item.name}</span>
+              ${isHighlighted ? '<span class="px-1.5 py-0.2 text-[10px] rounded bg-amber-400 text-slate-950 font-extrabold">NUEVO</span>' : ''}
+            </div>
+            <div class="text-[11px] text-slate-400 truncate">${item.rounds || ''}</div>
+          </div>
+        </div>
+        <div class="text-right shrink-0">
+          <div class="text-lg font-extrabold tabular-nums ${pos === 1 ? 'text-amber-400' : pos <= 3 ? 'text-cyan-300' : 'text-emerald-400'}">
+            ${item.score.toFixed(1)}%
+          </div>
+          <div class="text-[10px] text-slate-500">${item.time || ''}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ============================================================================
+   5. ESTADO Y MOTOR DEL JUEGO ("TRAZÁ LA CURVA")
+   ============================================================================ */
+// Modos: 0 = Clásico (Jujuy, BsAs, Tucumán), 1 = Mixto (Jujuy + 2 Aleatorias), 2 = 3 Aleatorias
+let gameMode = 0;
+let currentPlayer = '';
+let roundIndex = 0;
+let roundProvinces = [];
+let roundResults = []; // { col, nombre, precision, user2024, real2024, ml2026 }
+let userPoints = {};   // { 2015: val, 2016: val, ..., 2024: val }
+let isDrawing = false;
+let isRevealed = false;
+let revealProgress = 0;
+let revealAnimId = null;
+let lastHoverYear = null;
+let lastHoverVal = null;
+
+const Y_MIN = 4;
+const Y_MAX = 28;
+const YEAR_START = 2000;
+const YEAR_SPLIT = 2014;
+const YEAR_END_DRAW = 2024;
+const YEAR_END_ML = 2026;
+
+function pickProvincesForGame() {
+  if (gameMode === 0) {
+    return ['natalidad_jujuy', 'natalidad_buenos_aires', 'natalidad_tucuman'];
+  } else if (gameMode === 1) {
+    const pool = JURISDICCIONES.map(j => j.col).filter(c => c !== 'natalidad_jujuy');
+    pool.sort(() => Math.random() - 0.5);
+    return ['natalidad_jujuy', pool[0], pool[1]];
+  } else {
+    const pool = JURISDICCIONES.map(j => j.col);
+    pool.sort(() => Math.random() - 0.5);
+    return pool.slice(0, 3);
+  }
+}
+
+function startNewGame() {
+  const nameInput = $('playerName').value.trim();
+  currentPlayer = nameInput || 'Visitante Expo';
+  roundProvinces = pickProvincesForGame();
+  roundIndex = 0;
+  roundResults = [];
+  lastAddedId = null;
+
+  playSFX('click');
+  $('screenStart').classList.add('hidden');
+  $('screenFinal').classList.add('hidden');
+  $('screenPlay').classList.remove('hidden');
+
+  loadRound(0);
+}
+
+function loadRound(idx) {
+  roundIndex = idx;
+  isRevealed = false;
+  revealProgress = 0;
+  if (revealAnimId) cancelAnimationFrame(revealAnimId);
+
+  const col = roundProvinces[idx];
+  const meta = BY_COL[col];
+  const d = DATA[col];
+
+  // Inicializar trazo del usuario con el ancla fija en 2014
+  userPoints = { 2014: d[2014] };
+
+  $('roundBadge').textContent = `RONDA ${idx + 1} DE 3`;
+  $('provTitle').textContent = meta.nombre;
+  $('provRegion').textContent = meta.region;
+  $('provHint').innerHTML = `En el año 2000 registraba <b>${d[2000].toFixed(1)}‰</b> y en 2014 estaba en <b>${d[2014].toFixed(1)}‰</b>. ¡Dibujá qué pasó hasta 2024!`;
+
+  $('roundResultCard').classList.add('hidden');
+  $('btnReveal').classList.remove('hidden');
+  $('btnReveal').disabled = true;
+  $('btnReveal').classList.remove('pulse-cta');
+  $('btnNextRound').classList.add('hidden');
+
+  updateRoundPills();
+  updateDrawProgressUI();
+  resizeAndDrawCanvas();
+}
+
+function updateRoundPills() {
+  $('roundPills').innerHTML = roundProvinces.map((col, i) => {
+    const name = BY_COL[col].nombre;
+    const done = roundResults[i];
+    if (done) {
+      return `<span class="px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold">${name}: ${done.precision.toFixed(1)}%</span>`;
+    } else if (i === roundIndex) {
+      return `<span class="px-2.5 py-1 rounded-lg bg-cyan-500/25 border border-cyan-400 text-cyan-200 text-xs font-extrabold">▶ ${name}</span>`;
+    } else {
+      return `<span class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-500 text-xs font-semibold">${name}</span>`;
+    }
+  }).join('');
+}
+
+function countDrawnYears() {
+  let c = 0;
+  for (let y = 2015; y <= 2024; y++) {
+    if (userPoints[y] != null) c++;
+  }
+  return c;
+}
+
+function updateDrawProgressUI() {
+  const c = countDrawnYears();
+  $('liveCoordBadge').textContent = `Progreso: ${c} / 10 años`;
+  if (c === 10 && !isRevealed) {
+    $('drawStatusIcon').textContent = '✅';
+    $('drawStatusText').innerHTML = '<b>¡Curva 2015–2024 completada!</b> Podés retocarla o presionar el botón verde para revelar.';
+    $('btnReveal').disabled = false;
+    $('btnReveal').classList.add('pulse-cta');
+  } else if (!isRevealed) {
+    $('drawStatusIcon').textContent = '✏️';
+    $('drawStatusText').innerHTML = 'Mantené apretado el clic desde <b>2014</b> y arrastrá hacia la derecha hasta completar <b>2024</b>.';
+    $('btnReveal').disabled = true;
+    $('btnReveal').classList.remove('pulse-cta');
+  }
+}
+
+/* ============================================================================
+   6. RENDERIZADO DEL CANVAS E INTERACCIÓN DE DIBUJO CON INTERPOLACIÓN
+   ============================================================================ */
+const canvas = $('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+function getPad() {
+  return { left: 56, right: 34, top: 38, bottom: 46 };
+}
+
+function yearToX(year, w) {
+  const p = getPad();
+  return p.left + ((year - YEAR_START) / (YEAR_END_ML - YEAR_START)) * (w - p.left - p.right);
+}
+
+function valToY(val, h) {
+  const p = getPad();
+  const clamped = Math.max(Y_MIN, Math.min(Y_MAX, val));
+  return p.top + (1 - (clamped - Y_MIN) / (Y_MAX - Y_MIN)) * (h - p.top - p.bottom);
+}
+
+function xToYearFloat(x, w) {
+  const p = getPad();
+  return YEAR_START + ((x - p.left) / (w - p.left - p.right)) * (YEAR_END_ML - YEAR_START);
+}
+
+function yToVal(y, h) {
+  const p = getPad();
+  const ratio = 1 - (y - p.top) / (h - p.top - p.bottom);
+  const val = Y_MIN + ratio * (Y_MAX - Y_MIN);
+  return Math.max(Y_MIN, Math.min(Y_MAX, +val.toFixed(1)));
+}
+
+function resizeAndDrawCanvas() {
+  const rect = $('canvasWrap').getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  drawChart();
+}
+
+function drawChart() {
+  const w = canvas.width / (window.devicePixelRatio || 1);
+  const h = canvas.height / (window.devicePixelRatio || 1);
+  const p = getPad();
+  const col = roundProvinces[roundIndex];
+  if (!col || !DATA[col]) return;
+  const d = DATA[col];
+
+  ctx.clearRect(0, 0, w, h);
+
+  const x2014 = yearToX(YEAR_SPLIT, w);
+  const x2024 = yearToX(YEAR_END_DRAW, w);
+  const x2026 = yearToX(YEAR_END_ML, w);
+
+  // 1. Fondos de zonas (Histórico 2000-2014 | Zona de Dibujo 2014-2024 | Zona ML 2024-2026)
+  ctx.fillStyle = 'rgba(34, 211, 238, 0.05)';
+  ctx.fillRect(x2014, p.top, x2024 - x2014, h - p.top - p.bottom);
+
+  ctx.fillStyle = 'rgba(167, 139, 250, 0.09)';
+  ctx.fillRect(x2024, p.top, x2026 - x2024, h - p.top - p.bottom);
+
+  // 2. Grilla horizontal (Tasas ‰)
+  ctx.lineWidth = 1;
+  ctx.font = '600 12px "Plus Jakarta Sans", sans-serif';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+
+  for (let v = 5; v <= 25; v += 5) {
+    const y = valToY(v, h);
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.14)';
+    ctx.beginPath();
+    ctx.moveTo(p.left, y);
+    ctx.lineTo(w - p.right, y);
+    ctx.stroke();
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText(`${v} ‰`, p.left - 10, y);
+  }
+
+  // 3. Grilla vertical (Años)
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  for (let yr = YEAR_START; yr <= YEAR_END_ML; yr += 2) {
+    const x = yearToX(yr, w);
+    ctx.strokeStyle = yr > YEAR_SPLIT ? 'rgba(34, 211, 238, 0.12)' : 'rgba(148, 163, 184, 0.1)';
+    ctx.beginPath();
+    ctx.moveTo(x, p.top);
+    ctx.lineTo(x, h - p.bottom);
+    ctx.stroke();
+
+    ctx.fillStyle = yr > 2024 ? '#c4b5fd' : yr > 2014 ? '#38bdf8' : '#94a3b8';
+    ctx.fillText(yr, x, h - p.bottom + 10);
+  }
+
+  // 4. Líneas divisorias clave (2014 Quiebre y 2024 Frontera ML)
+  ctx.save();
+  ctx.setLineDash([6, 5]);
+  ctx.strokeStyle = '#fb7185';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x2014, p.top);
+  ctx.lineTo(x2014, h - p.bottom);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#a78bfa';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(x2024, p.top);
+  ctx.lineTo(x2024, h - p.bottom);
+  ctx.stroke();
+  ctx.restore();
+
+  // Etiquetas superiores de zonas
+  ctx.font = '700 11.5px "Plus Jakarta Sans", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText('DATOS HISTÓRICOS (2000–2014)', (p.left + x2014) / 2, p.top - 22);
+
+  ctx.fillStyle = '#22d3ee';
+  ctx.fillText('✏️ TU TRAZO DE PREDICCIÓN (2015–2024)', (x2014 + x2024) / 2, p.top - 22);
+
+  ctx.fillStyle = '#c4b5fd';
+  ctx.fillText('🤖 ML', (x2024 + x2026) / 2, p.top - 22);
+
+  // 5. Si ya se reveló, sombrear área de error entre curva real y curva del jugador (2014-2024)
+  if (isRevealed) {
+    const maxYrReveal = 2014 + Math.floor(revealProgress * 10);
+    if (maxYrReveal > 2014) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(251, 191, 36, 0.14)';
+      ctx.beginPath();
+      ctx.moveTo(yearToX(2014, w), valToY(d[2014], h));
+      for (let y = 2015; y <= maxYrReveal; y++) {
+        ctx.lineTo(yearToX(y, w), valToY(d[y], h));
+      }
+      for (let y = maxYrReveal; y >= 2014; y--) {
+        const uVal = userPoints[y] != null ? userPoints[y] : d[2014];
+        ctx.lineTo(yearToX(y, w), valToY(uVal, h));
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // 6. Dibujar Curva Histórica Oficial (2000 - 2014)
+  ctx.save();
+  ctx.strokeStyle = '#38bdf8';
+  ctx.lineWidth = 3.5;
+  ctx.beginPath();
+  for (let yr = 2000; yr <= 2014; yr++) {
+    const x = yearToX(yr, w), y = valToY(d[yr], h);
+    if (yr === 2000) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Puntos 2000-2014
+  for (let yr = 2000; yr <= 2014; yr++) {
+    const x = yearToX(yr, w), y = valToY(d[yr], h);
+    ctx.fillStyle = yr === 2014 ? '#fbbf24' : '#38bdf8';
+    ctx.beginPath();
+    ctx.arc(x, y, yr === 2014 ? 6.5 : 3.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Etiqueta del punto de anclaje 2014
+  const yAnchor = valToY(d[2014], h);
+  ctx.font = '800 12px "Plus Jakarta Sans", sans-serif';
+  ctx.fillStyle = '#fbbf24';
+  ctx.textAlign = 'right';
+  ctx.fillText(`2014: ${d[2014].toFixed(1)}‰`, x2014 - 10, yAnchor - 12);
+
+  // 7. Dibujar el Trazo del Jugador (2014 - 2024)
+  const drawnYears = Object.keys(userPoints).map(Number).sort((a, b) => a - b);
+  if (drawnYears.length > 1) {
+    ctx.save();
+    ctx.strokeStyle = '#22d3ee';
+    ctx.lineWidth = 3.5;
+    ctx.shadowColor = 'rgba(34, 211, 238, 0.55)';
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    drawnYears.forEach((yr, i) => {
+      const x = yearToX(yr, w), y = valToY(userPoints[yr], h);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.restore();
+
+    // Nodos de cada año dibujado por el usuario
+    drawnYears.forEach(yr => {
+      if (yr === 2014) return;
+      const x = yearToX(yr, w), y = valToY(userPoints[yr], h);
+      ctx.fillStyle = '#22d3ee';
+      ctx.beginPath();
+      ctx.arc(x, y, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#020617';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+
+    // Etiqueta del último punto trazado por el usuario
+    const lastYr = drawnYears[drawnYears.length - 1];
+    const lastX = yearToX(lastYr, w), lastY = valToY(userPoints[lastYr], h);
+    ctx.font = '800 12px "Plus Jakarta Sans", sans-serif';
+    ctx.fillStyle = '#22d3ee';
+    ctx.textAlign = 'center';
+    ctx.fillText(`Tu ${lastYr}: ${userPoints[lastYr].toFixed(1)}‰`, lastX, lastY - 14);
+  }
+
+  // 8. Si se activó la revelación, dibujar Curva Real (2014-2024) + Proyección ML (2025-2026)
+  if (isRevealed) {
+    const totalSteps = 12; // 2015..2026 (12 años)
+    const currentStep = revealProgress * totalSteps;
+    const maxYear = Math.min(2026, 2014 + Math.floor(currentStep));
+
+    // Tramo Oficial 2014-2024 en Verde Esmeralda
+    ctx.save();
+    ctx.strokeStyle = '#10b981';
+    ctx.lineWidth = 4;
+    ctx.shadowColor = 'rgba(16, 185, 129, 0.5)';
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    for (let yr = 2014; yr <= Math.min(2024, maxYear); yr++) {
+      const x = yearToX(yr, w), y = valToY(d[yr], h);
+      if (yr === 2014) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    for (let yr = 2015; yr <= Math.min(2024, maxYear); yr++) {
+      const x = yearToX(yr, w), y = valToY(d[yr], h);
+      ctx.fillStyle = '#10b981';
+      ctx.beginPath();
+      ctx.arc(x, y, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (maxYear >= 2024) {
+      const x24 = yearToX(2024, w), y24 = valToY(d[2024], h);
+      ctx.font = '800 12.5px "Plus Jakarta Sans", sans-serif';
+      ctx.fillStyle = '#10b981';
+      ctx.textAlign = 'center';
+      ctx.fillText(`Real 2024: ${d[2024].toFixed(1)}‰`, x24, y24 + 20);
+    }
+
+    // Tramo Proyección Machine Learning (2024-2026) en Violeta Punteado
+    if (maxYear >= 2025) {
+      ctx.save();
+      ctx.setLineDash([5, 4]);
+      ctx.strokeStyle = '#a78bfa';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(yearToX(2024, w), valToY(d[2024], h));
+      for (let yr = 2025; yr <= maxYear; yr++) {
+        ctx.lineTo(yearToX(yr, w), valToY(d[yr], h));
+      }
+      ctx.stroke();
+      ctx.restore();
+
+      for (let yr = 2025; yr <= maxYear; yr++) {
+        const x = yearToX(yr, w), y = valToY(d[yr], h);
+        ctx.fillStyle = '#a78bfa';
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+}
+
+// Interpolación suave entre el último año dibujado y el nuevo movimiento del mouse
+function recordPointerAt(clientX, clientY) {
+  if (isRevealed) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = clientX - rect.left;
+  const y = clientY - rect.top;
+
+  const yrFloat = xToYearFloat(x, rect.width);
+  const targetYear = Math.round(yrFloat);
+  if (targetYear < 2015 || targetYear > 2024) return;
+
+  const val = yToVal(y, rect.height);
+
+  // Buscar el año anterior más cercano ya existente para interpolar sin huecos
+  let prevYear = 2014;
+  for (let yr = targetYear - 1; yr >= 2014; yr--) {
+    if (userPoints[yr] != null) {
+      prevYear = yr;
+      break;
+    }
+  }
+  const prevVal = userPoints[prevYear];
+  const span = targetYear - prevYear;
+  for (let yr = prevYear + 1; yr <= targetYear; yr++) {
+    const t = (yr - prevYear) / span;
+    userPoints[yr] = +(prevVal + t * (val - prevVal)).toFixed(1);
+  }
+
+  if (lastHoverYear !== targetYear || Math.abs((lastHoverVal || 0) - val) >= 0.8) {
+    playSFX('draw', val);
+    lastHoverYear = targetYear;
+    lastHoverVal = val;
+  }
+
+  updateDrawProgressUI();
+  drawChart();
+}
+
+canvas.addEventListener('pointerdown', e => {
+  if (isRevealed) return;
+  isDrawing = true;
+  canvas.setPointerCapture(e.pointerId);
+  recordPointerAt(e.clientX, e.clientY);
+});
+
+canvas.addEventListener('pointermove', e => {
+  if (!isDrawing || isRevealed) return;
+  recordPointerAt(e.clientX, e.clientY);
+});
+
+canvas.addEventListener('pointerup', () => {
+  isDrawing = false;
+});
+
+/* ============================================================================
+   7. CÁLCULO DE PRECISIÓN, REVELACIÓN Y GRAN FINAL
+   ============================================================================ */
+function calculateRoundPrecision(col) {
+  const d = DATA[col];
+  let sumAbsErr = 0;
+  for (let yr = 2015; yr <= 2024; yr++) {
+    const u = userPoints[yr] != null ? userPoints[yr] : d[2014];
+    sumAbsErr += Math.abs(u - d[yr]);
+  }
+  const mae = sumAbsErr / 10;
+  // Tolerancia de escala de 15 puntos por mil para convertir MAE en % de precisión (0 a 100%)
+  const precision = Math.max(0, Math.min(100, (1 - mae / 15) * 100));
+  return +precision.toFixed(1);
+}
+
+function getFeedbackTag(score) {
+  if (score >= 92) return '🔥 ¡Precisión de Científico de Datos Senior!';
+  if (score >= 85) return '🎯 ¡Excelente ojo estadístico!';
+  if (score >= 75) return '👏 ¡Muy buena aproximación!';
+  if (score >= 62) return '📈 ¡Cerca! La caída real fue más brusca';
+  return '💡 ¡Sorpresa demográfica! Mirá cuánto bajó en realidad';
+}
+
+function revealCurrentRound() {
+  if (isRevealed) return;
+  isRevealed = true;
+  playSFX('reveal');
+
+  const col = roundProvinces[roundIndex];
+  const meta = BY_COL[col];
+  const d = DATA[col];
+  const precision = calculateRoundPrecision(col);
+
+  roundResults[roundIndex] = {
+    col,
+    nombre: meta.nombre,
+    precision,
+    user2024: userPoints[2024],
+    real2024: d[2024],
+    ml2026: d[2026]
+  };
+
+  $('btnReveal').classList.add('hidden');
+  $('btnNextRound').classList.remove('hidden');
+  $('btnNextRound').textContent = roundIndex < 2 ? `Siguiente Provincia (${roundIndex + 2}/3) ➔` : '🏆 ¡VER MI PROMEDIO FINAL Y PUESTO EN EL RANKING!';
+
+  // Animar la línea real disolviendo la niebla de 2014 a 2026
+  const startTime = performance.now();
+  const duration = 850;
+
+  function stepReveal(now) {
+    revealProgress = Math.min(1, (now - startTime) / duration);
+    drawChart();
+    if (revealProgress < 1) {
+      revealAnimId = requestAnimationFrame(stepReveal);
+    } else {
+      showRoundSummaryCard(roundResults[roundIndex], meta);
+      updateRoundPills();
+    }
+  }
+  revealAnimId = requestAnimationFrame(stepReveal);
+}
+
+function showRoundSummaryCard(res, meta) {
+  $('roundResultCard').classList.remove('hidden');
+  $('roundRankTag').textContent = getFeedbackTag(res.precision);
+  $('resUser2024').textContent = `${res.user2024.toFixed(1)} ‰`;
+  $('resReal2024').textContent = `${res.real2024.toFixed(1)} ‰`;
+  $('resML2026').textContent = `${res.ml2026.toFixed(1)} ‰`;
+  $('resInsight').innerHTML = `💡 <b>Dato del Dashboard:</b> ${meta.info}`;
+
+  // Animación numérica del porcentaje
+  const start = performance.now();
+  function countUp(now) {
+    const p = Math.min(1, (now - start) / 500);
+    $('roundScoreBig').textContent = `${(res.precision * p).toFixed(1)}%`;
+    if (p < 1) requestAnimationFrame(countUp);
+  }
+  requestAnimationFrame(countUp);
+}
+
+function finishGameAndShowPodium() {
+  const avg = +(roundResults.reduce((acc, r) => acc + r.precision, 0) / roundResults.length).toFixed(1);
+  const list = getLeaderboard();
+  const prevTop = list.length > 0 ? Math.max(...list.map(x => x.score)) : 0;
+  const isNewRecord = avg > prevTop;
+
+  const newEntry = {
+    id: 'p_' + Date.now(),
+    name: currentPlayer,
+    score: avg,
+    rounds: roundResults.map(r => `${r.nombre} ${r.precision.toFixed(0)}%`).join(' · '),
+    time: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+  };
+
+  lastAddedId = newEntry.id;
+  list.push(newEntry);
+  saveLeaderboard(list);
+
+  const sorted = getLeaderboard().sort((a, b) => b.score - a.score);
+  const rankPos = sorted.findIndex(x => x.id === newEntry.id) + 1;
+
+  $('screenPlay').classList.add('hidden');
+  $('screenFinal').classList.remove('hidden');
+
+  const banner = $('finalBanner');
+  if (isNewRecord || rankPos === 1) {
+    banner.className = 'p-6 rounded-2xl text-center mb-5 border-2 bg-amber-500/15 border-amber-400 shadow-2xl';
+    $('finalCrown').textContent = '👑🏆';
+    $('finalHeadline').textContent = `¡ROMPISTE EL RÉCORD, ${currentPlayer.toUpperCase()}!`;
+    $('finalSubline').textContent = '¡Sos el nuevo TOP #1 en el Ranking General de la Expo!';
+  } else if (rankPos <= 3) {
+    banner.className = 'p-6 rounded-2xl text-center mb-5 border-2 bg-cyan-500/15 border-cyan-400 shadow-xl';
+    $('finalCrown').textContent = rankPos === 2 ? '🥈🔥' : '🥉🔥';
+    $('finalHeadline').textContent = `¡ENTRASTE AL PODIO, ${currentPlayer.toUpperCase()}!`;
+    $('finalSubline').textContent = `Estás en el Puesto #${rankPos} del Ranking de la Expo`;
+  } else {
+    banner.className = 'p-6 rounded-2xl text-center mb-5 border-2 bg-slate-900/90 border-violet-400/50';
+    $('finalCrown').textContent = '🎯📊';
+    $('finalHeadline').textContent = `¡GRAN PARTIDA, ${currentPlayer.toUpperCase()}!`;
+    $('finalSubline').textContent = `Quedaste en el Puesto #${rankPos} del Ranking de la Expo`;
+  }
+
+  $('finalAvgScore').textContent = `${avg.toFixed(1)}%`;
+
+  $('finalBreakdown').innerHTML = roundResults.map((r, i) => `
+    <div class="p-4 rounded-xl bg-slate-900/85 border border-slate-800 text-center">
+      <div class="text-xs font-bold uppercase text-slate-400">Ronda ${i + 1} · ${r.nombre}</div>
+      <div class="text-3xl font-extrabold text-emerald-400 my-1 tabular-nums">${r.precision.toFixed(1)}%</div>
+      <div class="text-xs text-slate-300">
+        Tu 2024: <b class="text-cyan-300">${r.user2024.toFixed(1)}‰</b> · Real: <b class="text-emerald-300">${r.real2024.toFixed(1)}‰</b>
+      </div>
+    </div>
+  `).join('');
+
+  playSFX('fanfare');
+  if (typeof confetti === 'function' && (rankPos <= 5 || avg >= 80)) {
+    confetti({ particleCount: isNewRecord ? 130 : 75, spread: 80, origin: { y: 0.6 } });
+  }
+}
+
+/* ============================================================================
+   8. EVENTOS DE INTERFAZ Y CONTROLES DEL STAND
+   ============================================================================ */
+$('btnStartGame').onclick = startNewGame;
+$('playerName').addEventListener('keydown', e => { if (e.key === 'Enter') startNewGame(); });
+
+$('btnClearDraw').onclick = () => {
+  if (isRevealed) return;
+  playSFX('click');
+  const col = roundProvinces[roundIndex];
+  userPoints = { 2014: DATA[col][2014] };
+  updateDrawProgressUI();
+  drawChart();
+};
+
+$('btnReveal').onclick = revealCurrentRound;
+
+$('btnNextRound').onclick = () => {
+  playSFX('click');
+  if (roundIndex < 2) {
+    loadRound(roundIndex + 1);
+  } else {
+    finishGameAndShowPodium();
+  }
+};
+
+$('btnCancelGame').onclick = () => {
+  playSFX('click');
+  $('screenPlay').classList.add('hidden');
+  $('screenStart').classList.remove('hidden');
+};
+
+$('btnPlayAgainSame').onclick = () => {
+  playSFX('click');
+  $('playerName').value = '';
+  $('screenFinal').classList.add('hidden');
+  $('screenStart').classList.remove('hidden');
+  $('playerName').focus();
+};
+
+$('btnMode').onclick = () => {
+  playSFX('click');
+  gameMode = (gameMode + 1) % 3;
+  const labels = [
+    '🎯 Modo: Clásico (Jujuy · Bs.As. · Tucumán)',
+    '🎲 Modo: Mixto (Jujuy + 2 Sorpresa)',
+    '🌎 Modo: Federal (3 Provincias al Azar)'
+  ];
+  $('btnMode').textContent = labels[gameMode];
+};
+
+$('btnExpo').onclick = () => {
+  playSFX('click');
+  document.documentElement.classList.toggle('expo-scale');
+  $('btnExpo').classList.toggle('on');
+  setTimeout(resizeAndDrawCanvas, 260);
+};
+
+$('btnSound').onclick = () => {
+  soundOn = !soundOn;
+  $('btnSound').classList.toggle('on', soundOn);
+  $('btnSound').textContent = soundOn ? '🔊 Sonido' : '🔇 Silencio';
+  if (soundOn) playSFX('click');
+};
+
+$('btnAdminToggle').onclick = () => {
+  $('adminPanel').classList.toggle('hidden');
+};
+
+$('btnSeedRanking').onclick = () => {
+  playSFX('click');
+  saveLeaderboard([...INITIAL_BENCHMARKS]);
+};
+
+$('btnClearRanking').onclick = () => {
+  playSFX('click');
+  lastAddedId = null;
+  saveLeaderboard([]);
+};
+
+window.addEventListener('resize', () => {
+  if (!$('screenPlay').classList.contains('hidden')) {
+    resizeAndDrawCanvas();
+  }
+});
+
+// Inicialización al cargar
+document.addEventListener('DOMContentLoaded', () => {
+  syncFromAppsScript();
+  renderLeaderboard();
+});
+</script>
+</body>
+</html>
